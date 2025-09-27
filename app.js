@@ -1,11 +1,22 @@
-const express = require('express')
-const app = express()
-const port = 3000
+const express = require("express");
+const app = express();
+require("dotenv").config();
+const sequelize = require("./models/index");
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+// sync db
+const User = require("./models/user");
+const Produk = require("./models/produk");
+sequelize.sync();
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.get("/", (req, res) => {
+  res.json({ message: "API telah berjalan" });
+});
+
+// routes
+app.use("/auth", require("./routes/authRoutes"));
+app.use("/produk", require("./routes/produkRoutes"));
+
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
