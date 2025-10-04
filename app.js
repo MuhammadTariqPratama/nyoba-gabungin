@@ -2,10 +2,12 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const sequelize = require("./models/index");
+const swaggerDocs = require("./swagger/swagger");
 
 // sync db
 const User = require("./models/user");
 const Produk = require("./models/produk");
+const Pemasok = require("./models/pemasok");
 sequelize.sync();
 
 app.use(express.json());
@@ -18,5 +20,9 @@ app.get("/", (req, res) => {
 // routes
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/produk", require("./routes/produkRoutes"));
+app.use("/pemasok", require("./routes/pemasokRoutes"));
+
+// Swagger Docs
+swaggerDocs(app);
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
