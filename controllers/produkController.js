@@ -1,9 +1,10 @@
 const Produk = require("../models/produk");
+const Variasi = require("../models/variasi");
 
-// Ambil semua produk
+// Ambil semua produk (include variasi)
 exports.getAll = async (req, res) => {
   try {
-    const produk = await Produk.findAll();
+    const produk = await Produk.findAll({ include: "variasi" });
     res.json(produk);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -13,7 +14,7 @@ exports.getAll = async (req, res) => {
 // Ambil produk berdasarkan ID
 exports.getById = async (req, res) => {
   try {
-    const produk = await Produk.findByPk(req.params.id);
+    const produk = await Produk.findByPk(req.params.id, { include: "variasi" });
     if (!produk) {
       return res.status(404).json({ message: "Produk tidak ditemukan" });
     }
@@ -26,8 +27,14 @@ exports.getById = async (req, res) => {
 // Tambah produk baru
 exports.create = async (req, res) => {
   try {
-    const { nama, harga } = req.body;
-    const produk = await Produk.create({ nama, harga });
+    const { namaProduk, deskripsi, fotoProduk } = req.body;
+
+    const produk = await Produk.create({
+      namaProduk,
+      deskripsi,
+      fotoProduk
+    });
+
     res.json({ message: "Produk ditambahkan", produk });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -37,12 +44,14 @@ exports.create = async (req, res) => {
 // Update produk
 exports.update = async (req, res) => {
   try {
-    const { nama, harga } = req.body;
+    const { namaProduk, deskripsi, fotoProduk } = req.body;
     const produk = await Produk.findByPk(req.params.id);
+
     if (!produk) {
       return res.status(404).json({ message: "Produk tidak ditemukan" });
     }
-    await produk.update({ nama, harga });
+
+    await produk.update({ namaProduk, deskripsi, fotoProduk });
     res.json({ message: "Produk diperbarui", produk });
   } catch (err) {
     res.status(500).json({ message: err.message });
