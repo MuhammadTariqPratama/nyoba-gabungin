@@ -5,10 +5,12 @@ const sequelize = require("./models/index");
 const swaggerDocs = require("./swagger/swagger");
 
 // sync db
-const User = require("./models/user");
+const Admin = require("./models/admin");
 const Produk = require("./models/produk");
 const Pemasok = require("./models/pemasok");
 const variasi = require("./models/variasi");
+const AlurBarang = require("./models/alurBarang");
+sequelize.sync();
 
 sequelize.sync({ alter: true })
   .then(() => console.log("Database synced"))
@@ -24,10 +26,11 @@ app.get("/", (req, res) => {
 });
 
 // routes
-app.use("/auth", require("./routes/authRoutes"));
+app.use("/admin", require("./routes/adminRoutes"));
 app.use("/produk", require("./routes/produkRoutes"));
 app.use("/pemasok", require("./routes/pemasokRoutes"));
 app.use("/variasi", require("./routes/variasiRoutes"));
+app.use("/alurBarang", require("./routes/alurBarangRoutes"));
 
 // Swagger Docs
 swaggerDocs(app);
