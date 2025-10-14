@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const produkController = require("../controllers/produkController");
 const verifyToken = require("../middlewares/authJWT");
+const upload = require("../middlewares/upload");
 
 /**
  * @swagger
@@ -134,7 +135,7 @@ router.get("/:id", produkController.getById);
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.post("/", verifyToken, produkController.create);
+router.post("/", verifyToken, upload.single("fotoProduk"), produkController.create);
 
 /**
  * @swagger
@@ -175,7 +176,7 @@ router.post("/", verifyToken, produkController.create);
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.put("/:id", verifyToken, produkController.update);
+router.put("/:id", verifyToken, upload.single("fotoProduk"), produkController.update);
 
 /**
  * @swagger
