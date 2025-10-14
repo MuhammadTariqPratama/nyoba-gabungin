@@ -3,6 +3,8 @@ const app = express();
 require("dotenv").config();
 const sequelize = require("./models/index");
 const swaggerDocs = require("./swagger/swagger");
+const path = require("path");
+
 
 // sync db
 const Admin = require("./models/admin");
@@ -31,10 +33,10 @@ app.use("/produk", require("./routes/produkRoutes"));
 app.use("/pemasok", require("./routes/pemasokRoutes"));
 app.use("/variasi", require("./routes/variasiRoutes"));
 app.use("/alurBarang", require("./routes/alurBarangRoutes"));
+app.use("/uploads", express.static("public/uploads"));
+
 
 // Swagger Docs
 swaggerDocs(app);
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
-
-

@@ -5,7 +5,7 @@ const Produk = require("../models/produk");
 exports.getAll = async (req, res) => {
   try {
     const variasi = await Variasi.findAll({
-      include: { model: Produk, as: "produk" }
+      include: { model: Produk, as: "produk" },
     });
     res.json(variasi);
   } catch (err) {
@@ -17,7 +17,7 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const variasi = await Variasi.findByPk(req.params.id, {
-      include: { model: Produk, as: "produk" }
+      include: { model: Produk, as: "produk" },
     });
 
     if (!variasi) {
@@ -33,56 +33,50 @@ exports.getById = async (req, res) => {
 // Tambah variasi baru
 exports.create = async (req, res) => {
   try {
-    const { produkID, namaVariasi, harga, stok, fotoVariasi } = req.body;
-
-    // Validasi input
-    if (!produkID || !namaVariasi || !harga) {
-      return res.status(400).json({ message: "produkID, namaVariasi, dan harga wajib diisi" });
-    }
-
-    // Pastikan produk ada
-    const produk = await Produk.findByPk(produkID);
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
-    }
+    const { produkID, namaVariasi, harga, stok } = req.body;
+    const fotoVariasi = req.file ? `uploads/variasi/${req.file.filename}` : null;
 
     const variasi = await Variasi.create({
       produkID,
       namaVariasi,
       harga,
-      stok: stok || 0,
+      stok,
       fotoVariasi
     });
 
-    res.status(201).json({
-      message: "Variasi ditambahkan",
-      variasi
-    });
+    res.status(201).json({ message: "Variasi ditambahkan", variasi });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+
 // Update variasi
 exports.update = async (req, res) => {
   try {
-    const { namaVariasi, harga, stok, fotoVariasi } = req.body;
+    const { namaVariasi, harga, stok } = req.body;
     const variasi = await Variasi.findByPk(req.params.id);
 
     if (!variasi) {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }
 
+    // Jika user upload foto baru
+    let fotoVariasi = variasi.fotoVariasi;
+    if (req.file) {
+      fotoVariasi = `/images/${req.file.filename}`;
+    }
+
     await variasi.update({
       namaVariasi: namaVariasi || variasi.namaVariasi,
       harga: harga || variasi.harga,
       stok: stok !== undefined ? stok : variasi.stok,
-      fotoVariasi: fotoVariasi || variasi.fotoVariasi
+      fotoVariasi,
     });
 
     res.json({
       message: "Variasi diperbarui",
-      variasi
+      variasi,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
