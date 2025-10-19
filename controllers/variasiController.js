@@ -1,13 +1,50 @@
+const { Op } = require("sequelize");
 const Variasi = require("../models/variasi");
 const Produk = require("../models/produk");
 
-// Ambil semua variasi beserta produk
+// Ambil semua variasi dengan pagination, search, dan filter harga
 exports.getAll = async (req, res) => {
   try {
-    const variasi = await Variasi.findAll({
+    // Ambil parameter query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const minHarga = parseFloat(req.query.minHarga) || 0;
+    const maxHarga = parseFloat(req.query.maxHarga) || Number.MAX_VALUE;
+
+    const offset = (page - 1) * limit;
+
+    // Buat kondisi pencarian dan filter harga
+    const whereClause = {
+      [Op.and]: [
+        { harga: { [Op.between]: [minHarga, maxHarga] } },
+      ],
+    };
+
+    if (search) {
+      whereClause[Op.and].push({
+        namaVariasi: { [Op.like]: `%${search}%` },
+      });
+    }
+
+    // Ambil data dari database
+    const { rows: variasi, count: totalItems } = await Variasi.findAndCountAll({
+      where: whereClause,
       include: { model: Produk, as: "produk" },
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
     });
-    res.json(variasi);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      currentPage: page,
+      totalPages,
+      totalItems,
+      perPage: limit,
+      data: variasi,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -41,7 +78,7 @@ exports.create = async (req, res) => {
       namaVariasi,
       harga,
       stok,
-      fotoVariasi
+      fotoVariasi,
     });
 
     res.status(201).json({ message: "Variasi ditambahkan", variasi });
@@ -49,7 +86,6 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // Update variasi
 exports.update = async (req, res) => {
@@ -61,10 +97,9 @@ exports.update = async (req, res) => {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }
 
-    // Jika user upload foto baru
     let fotoVariasi = variasi.fotoVariasi;
     if (req.file) {
-      fotoVariasi = `/images/${req.file.filename}`;
+      fotoVariasi = `uploads/variasi/${req.file.filename}`;
     }
 
     await variasi.update({
@@ -74,10 +109,7 @@ exports.update = async (req, res) => {
       fotoVariasi,
     });
 
-    res.json({
-      message: "Variasi diperbarui",
-      variasi,
-    });
+    res.json({ message: "Variasi diperbarui", variasi });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -87,7 +119,6 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const variasi = await Variasi.findByPk(req.params.id);
-
     if (!variasi) {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }

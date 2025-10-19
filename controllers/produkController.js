@@ -1,12 +1,45 @@
+const { Op } = require("sequelize");
 const Produk = require("../models/produk");
 const Variasi = require("../models/variasi");
-const path = require("path");
 
-// Ambil semua produk (include variasi)
+// Ambil semua produk (include variasi) dengan pagination, search
 exports.getAll = async (req, res) => {
   try {
-    const produk = await Produk.findAll({ include: "variasi" });
-    res.json(produk);
+    // Ambil query parameter dari URL
+    const page = parseInt(req.query.page) || 1; // halaman saat ini
+    const limit = parseInt(req.query.limit) || 10; // jumlah data per halaman
+    const search = req.query.search || ""; // pencarian nama produk
+    const filter = req.query.filter || ""; // filter kategori atau lainnya jika ada
+
+    // Hitung offset (data awal)
+    const offset = (page - 1) * limit;
+
+    // Kondisi pencarian dan filter
+    const whereClause = {};
+
+    // Jika ada pencarian namaProduk
+    if (search) {
+      whereClause.namaProduk = { [Op.like]: `%${search}%` };
+    }
+
+    // Ambil data dengan kondisi, pagination, dan relasi variasi
+    const { rows: produk, count: totalItems } = await Produk.findAndCountAll({
+      where: whereClause,
+      include: [{ model: Variasi, as: "variasi" }],
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      currentPage: page,
+      totalPages,
+      totalItems,
+      perPage: limit,
+      data: produk,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -34,7 +67,7 @@ exports.create = async (req, res) => {
     const produk = await Produk.create({
       namaProduk,
       deskripsi,
-      fotoProduk
+      fotoProduk,
     });
 
     res.json({ message: "Produk ditambahkan", produk });
@@ -42,7 +75,6 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // Update produk
 exports.update = async (req, res) => {
@@ -56,7 +88,7 @@ exports.update = async (req, res) => {
 
     let fotoProduk = produk.fotoProduk;
     if (req.file) {
-      fotoProduk = `/images/${req.file.filename}`;
+      fotoProduk = `uploads/produk/${req.file.filename}`;
     }
 
     await produk.update({ namaProduk, deskripsi, fotoProduk });
