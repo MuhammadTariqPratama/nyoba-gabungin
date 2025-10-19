@@ -1,15 +1,49 @@
+const { Op } = require("sequelize");
 const Pemasok = require("../models/pemasok");
 
-// Ambil semua pemasok
+// Ambil semua pemasok (dengan pagination, search, dan filter alamat)
 exports.getAll = async (req, res) => {
   try {
-    const pemasok = await Pemasok.findAll();
+    // Ambil query dari URL
+    const page = parseInt(req.query.page) || 1; // halaman saat ini
+    const limit = parseInt(req.query.limit) || 10; // jumlah data per halaman
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || ""; // pencarian nama
+    const alamat = req.query.alamat || ""; // filter alamat
+
+    // Kondisi filter dinamis
+    const whereClause = {};
+
+    if (search) {
+      whereClause.namaPemasok = { [Op.like]: `%${search}%` };
+    }
+
+    if (alamat) {
+      whereClause.alamatPemasok = { [Op.like]: `%${alamat}%` };
+    }
+
+    // Ambil data dengan pagination + filter
+    const { rows: pemasok, count: totalItems } = await Pemasok.findAndCountAll({
+      where: whereClause,
+      limit,
+      offset,
+      order: [["namaPemasok", "ASC"]],
+    });
+
     res.json({
       message: `Berhasil mengambil ${pemasok.length} data pemasok.`,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      perPage: limit,
       data: pemasok,
     });
   } catch (err) {
-    res.status(500).json({ message: "Gagal mengambil data pemasok.", error: err.message });
+    res.status(500).json({
+      message: "Gagal mengambil data pemasok.",
+      error: err.message,
+    });
   }
 };
 

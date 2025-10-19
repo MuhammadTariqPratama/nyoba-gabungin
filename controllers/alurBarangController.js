@@ -1,19 +1,48 @@
+const { Op } = require("sequelize");
 const AlurBarang = require("../models/alurBarang");
 const Admin = require("../models/admin");
 const Variasi = require("../models/variasi");
 
-// ==================== Ambil Semua Alur Barang ====================
+// ==================== Ambil Semua Alur Barang (Pagination + Search + Filter) ====================
 exports.getAll = async (req, res) => {
   try {
-    const alurBarang = await AlurBarang.findAll({
+    // Ambil parameter dari query URL
+    const page = parseInt(req.query.page) || 1; // halaman saat ini
+    const limit = parseInt(req.query.limit) || 10; // jumlah data per halaman
+    const offset = (page - 1) * limit;
+
+    const search = req.query.search || ""; // search berdasarkan jenisAlur
+    const lokasi = req.query.lokasi || ""; // filter lokasiProduk
+
+    // Kondisi pencarian dan filter
+    const whereClause = {};
+
+    if (search) {
+      whereClause.jenisAlur = { [Op.like]: `%${search}%` };
+    }
+
+    if (lokasi) {
+      whereClause.lokasiProduk = { [Op.like]: `%${lokasi}%` };
+    }
+
+    // Ambil data dengan pagination, search, dan filter
+    const { count: totalItems, rows: alurBarang } = await AlurBarang.findAndCountAll({
+      where: whereClause,
       include: [
         { model: Admin, as: "admin", attributes: ["adminID", "username"] },
         { model: Variasi, as: "variasi", attributes: ["variasiID", "namaVariasi", "stok", "harga"] },
       ],
+      limit,
+      offset,
+      order: [["tanggal", "DESC"]],
     });
 
     res.json({
       message: `Berhasil mengambil ${alurBarang.length} data alur barang.`,
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      perPage: limit,
       data: alurBarang,
     });
   } catch (err) {
@@ -49,7 +78,6 @@ exports.create = async (req, res) => {
   try {
     const { jenisAlur, tanggal, jumlah, lokasiProduk, keterangan, variasiID, adminID } = req.body;
 
-    // Validasi input
     if (!jenisAlur || !tanggal || !jumlah || !variasiID || !adminID) {
       return res.status(400).json({ message: "Data jenisAlur, tanggal, jumlah, variasiID, dan adminID wajib diisi." });
     }
