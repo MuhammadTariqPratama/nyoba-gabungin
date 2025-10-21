@@ -5,7 +5,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert("variasi", [
       {
-        produkID: 2, // pastikan produkID ini sudah ada di tabel 'produk'
+        produkID: 1, // pastikan produkID ini sudah ada di tabel 'produk'
         namaVariasi: "Ukuran Kecil",
         harga: 25000.00,
         stok: 100,
@@ -14,7 +14,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        produkID: 3,
+        produkID: 2,
         namaVariasi: "Ukuran Sedang",
         harga: 35000.00,
         stok: 80,
@@ -23,7 +23,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        produkID: 4, // contoh variasi produk lain
+        produkID: 3, // contoh variasi produk lain
         namaVariasi: "Warna Merah",
         harga: 40000.00,
         stok: 50,
@@ -32,7 +32,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        produkID: 5,
+        produkID: 4,
         namaVariasi: "Warna Hitam",
         harga: 42000.00,
         stok: 40,
