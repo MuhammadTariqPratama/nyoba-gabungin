@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const produkController = require("../controllers/produkController");
+const { upload, compressImage } = require("../middlewares/uploadMiddleware");
+const Produk = require("../models/produk");
 const verifyToken = require("../middlewares/authJWT");
-const upload = require("../middlewares/upload");
 
 /**
  * @swagger
@@ -34,8 +34,8 @@ const upload = require("../middlewares/upload");
  *           example: Kaos polos berbahan katun premium
  *         fotoProduk:
  *           type: string
- *           description: URL foto produk
- *           example: "uploads/kaos_polos.jpg"
+ *           description: Path atau URL foto produk
+ *           example: uploads/produk/kaos_polos.jpg
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -64,47 +64,34 @@ const upload = require("../middlewares/upload");
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.get("/", produkController.getAll);
+router.get("/", async (req, res) => {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const produk = await Produk.findAll();
 
-/**
- * @swagger
- * /produk/{id}:
- *   get:
- *     summary: Ambil detail produk berdasarkan ID
- *     tags: [Produk]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID produk
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Detail produk ditemukan
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Produk'
- *       404:
- *         description: Produk tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
- */
-router.get("/:id", produkController.getById);
+    const data = produk.map(p => ({
+      ...p.toJSON(),
+      fotoUrl: p.fotoProduk ? `${baseUrl}/${p.fotoProduk}` : null,
+    }));
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengambil data produk", error: error.message });
+  }
+});
 
 /**
  * @swagger
  * /produk:
  *   post:
- *     summary: Tambah produk baru (butuh token)
+ *     summary: Tambah produk baru (dengan upload foto dan kompresi)
  *     tags: [Produk]
- *     security:
- *       - bearerAuth: []
+ *     consumes:
+ *       - multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -118,71 +105,58 @@ router.get("/:id", produkController.getById);
  *                 example: "Kemeja batik dengan motif modern"
  *               fotoProduk:
  *                 type: string
- *                 example: "uploads/kemeja_batik.jpg"
+ *                 format: binary
+ *                 description: Gambar produk
  *     responses:
- *       200:
+ *       201:
  *         description: Produk berhasil ditambahkan
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Produk ditambahkan
- *                 produk:
- *                   $ref: '#/components/schemas/Produk'
+ *               $ref: '#/components/schemas/Produk'
+ *       400:
+ *         description: Data tidak valid
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.post("/", verifyToken, upload.single("fotoProduk"), produkController.create);
+router.post("/", verifyToken, upload.single("fotoProduk"), compressImage, async (req, res) => {
+  try {
+    const { namaProduk, deskripsi } = req.body;
 
-/**
- * @swagger
- * /produk/{id}:
- *   put:
- *     summary: Perbarui data produk berdasarkan ID (butuh token)
- *     tags: [Produk]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID produk
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               namaProduk:
- *                 type: string
- *                 example: "Kemeja Lengan Panjang"
- *               deskripsi:
- *                 type: string
- *                 example: "Kemeja formal warna biru"
- *               fotoProduk:
- *                 type: string
- *                 example: "uploads/kemeja_baru.jpg"
- *     responses:
- *       200:
- *         description: Produk berhasil diperbarui
- *       404:
- *         description: Produk tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
- */
-router.put("/:id", verifyToken, upload.single("fotoProduk"), produkController.update);
+    if (!namaProduk) {
+      return res.status(400).json({ message: "Nama produk wajib diisi!" });
+    }
+
+    let fotoProduk = null;
+    if (req.file) {
+      fotoProduk = req.file.path.replace(/\\/g, "/").replace("public/", "");
+    }
+
+    const produkBaru = await Produk.create({
+      namaProduk,
+      deskripsi,
+      fotoProduk,
+    });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.status(201).json({
+      message: "✅ Produk berhasil ditambahkan!",
+      data: {
+        ...produkBaru.toJSON(),
+        fotoUrl: fotoProduk ? `${baseUrl}/${fotoProduk}` : null,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Gagal menambah produk:", error);
+    res.status(500).json({ message: "Terjadi kesalahan server", error: error.message });
+  }
+});
 
 /**
  * @swagger
  * /produk/{id}:
  *   delete:
- *     summary: Hapus produk berdasarkan ID (butuh token)
+ *     summary: Hapus produk berdasarkan ID (dan hapus foto dari server)
  *     tags: [Produk]
  *     security:
  *       - bearerAuth: []
@@ -201,6 +175,26 @@ router.put("/:id", verifyToken, upload.single("fotoProduk"), produkController.up
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.delete("/:id", verifyToken, produkController.delete);
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const produk = await Produk.findByPk(req.params.id);
+
+    if (!produk) {
+      return res.status(404).json({ message: "Produk tidak ditemukan" });
+    }
+
+    // Hapus file foto jika ada
+    if (produk.fotoProduk) {
+      const fs = require("fs");
+      const filePath = path.join("public", produk.fotoProduk);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    await produk.destroy();
+    res.json({ message: "🗑️ Produk berhasil dihapus!" });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal menghapus produk", error: error.message });
+  }
+});
 
 module.exports = router;

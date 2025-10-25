@@ -1,109 +1,128 @@
 const { Op } = require("sequelize");
 const Produk = require("../models/produk");
 const Variasi = require("../models/variasi");
+const fs = require("fs");
+const path = require("path");
 
-// Ambil semua produk (include variasi) dengan pagination, search
+// 📍 Ambil semua produk (include variasi) + pagination & search
 exports.getAll = async (req, res) => {
   try {
-    // Ambil query parameter dari URL
-    const page = parseInt(req.query.page) || 1; // halaman saat ini
-    const limit = parseInt(req.query.limit) || 10; // jumlah data per halaman
-    const search = req.query.search || ""; // pencarian nama produk
-    const filter = req.query.filter || ""; // filter kategori atau lainnya jika ada
-
-    // Hitung offset (data awal)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
     const offset = (page - 1) * limit;
 
-    // Kondisi pencarian dan filter
     const whereClause = {};
+    if (search) whereClause.namaProduk = { [Op.like]: `%${search}%` };
 
-    // Jika ada pencarian namaProduk
-    if (search) {
-      whereClause.namaProduk = { [Op.like]: `%${search}%` };
-    }
-
-    // Ambil data dengan kondisi, pagination, dan relasi variasi
     const { rows: produk, count: totalItems } = await Produk.findAndCountAll({
       where: whereClause,
       include: [{ model: Variasi, as: "variasi" }],
       limit,
       offset,
-      order: [["createdAt", "DESC"]],
+      order: [["produkID", "DESC"]],
     });
 
-    const totalPages = Math.ceil(totalItems / limit);
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const produkWithUrl = produk.map((item) => ({
+      ...item.toJSON(),
+      fotoProduk: item.fotoProduk
+        ? `${baseUrl}/uploads/produk/${path.basename(item.fotoProduk)}`
+        : null,
+    }));
 
     res.json({
       currentPage: page,
-      totalPages,
+      totalPages: Math.ceil(totalItems / limit),
       totalItems,
       perPage: limit,
-      data: produk,
+      data: produkWithUrl,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Ambil produk berdasarkan ID
+// 📍 Ambil produk berdasarkan ID
 exports.getById = async (req, res) => {
   try {
     const produk = await Produk.findByPk(req.params.id, { include: "variasi" });
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
-    }
-    res.json(produk);
+    if (!produk) return res.status(404).json({ message: "Produk tidak ditemukan" });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const data = produk.toJSON();
+    data.fotoProduk = produk.fotoProduk
+      ? `${baseUrl}/uploads/produk/${path.basename(produk.fotoProduk)}`
+      : null;
+
+    res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Tambah produk baru
+// 📍 Tambah produk baru (dengan foto upload)
 exports.create = async (req, res) => {
   try {
     const { namaProduk, deskripsi } = req.body;
-    const fotoProduk = req.file ? `uploads/produk/${req.file.filename}` : null;
+    const fotoProduk = req.file ? `public/uploads/produk/${req.file.filename}` : null;
 
-    const produk = await Produk.create({
-      namaProduk,
-      deskripsi,
-      fotoProduk,
+    const newProduk = await Produk.create({ namaProduk, deskripsi, fotoProduk });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.status(201).json({
+      message: "Produk berhasil ditambahkan",
+      data: {
+        ...newProduk.toJSON(),
+        fotoProduk: fotoProduk
+          ? `${baseUrl}/uploads/produk/${path.basename(fotoProduk)}`
+          : null,
+      },
     });
-
-    res.json({ message: "Produk ditambahkan", produk });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Update produk
+// 📍 Update produk (dengan foto baru opsional)
 exports.update = async (req, res) => {
   try {
     const { namaProduk, deskripsi } = req.body;
     const produk = await Produk.findByPk(req.params.id);
-
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
-    }
+    if (!produk) return res.status(404).json({ message: "Produk tidak ditemukan" });
 
     let fotoProduk = produk.fotoProduk;
     if (req.file) {
-      fotoProduk = `uploads/produk/${req.file.filename}`;
+      // hapus foto lama
+      if (fotoProduk && fs.existsSync(fotoProduk)) fs.unlinkSync(fotoProduk);
+      fotoProduk = `public/uploads/produk/${req.file.filename}`;
     }
 
     await produk.update({ namaProduk, deskripsi, fotoProduk });
-    res.json({ message: "Produk berhasil diperbarui", produk });
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.json({
+      message: "Produk berhasil diperbarui",
+      data: {
+        ...produk.toJSON(),
+        fotoProduk: fotoProduk
+          ? `${baseUrl}/uploads/produk/${path.basename(fotoProduk)}`
+          : null,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Hapus produk
+// 📍 Hapus produk + foto dari folder
 exports.delete = async (req, res) => {
   try {
     const produk = await Produk.findByPk(req.params.id);
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
+    if (!produk) return res.status(404).json({ message: "Produk tidak ditemukan" });
+
+    if (produk.fotoProduk && fs.existsSync(produk.fotoProduk)) {
+      fs.unlinkSync(produk.fotoProduk);
     }
 
     await produk.destroy();

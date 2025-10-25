@@ -1,6 +1,6 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+/** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert("alurBarang", [
@@ -10,8 +10,8 @@ module.exports = {
         jumlah: 100,
         lokasiProduk: "Gudang Utama",
         keterangan: "Barang baru diterima dari pemasok.",
-        variasiID: 5,
-        adminID: 2,
+        variasiID: 1, // disesuaikan
+        adminID: 1,
       },
       {
         jenisAlur: "Keluar",
@@ -19,8 +19,8 @@ module.exports = {
         jumlah: 30,
         lokasiProduk: "Toko Cabang 1",
         keterangan: "Pengiriman produk ke cabang.",
-        variasiID: 6,
-        adminID: 2,
+        variasiID: 2, // disesuaikan
+        adminID: 1,
       },
       {
         jenisAlur: "Masuk",
@@ -28,8 +28,8 @@ module.exports = {
         jumlah: 50,
         lokasiProduk: "Gudang B",
         keterangan: "Restock produk dari supplier tambahan.",
-        variasiID: 7,
-        adminID: 2,
+        variasiID: 3, // disesuaikan
+        adminID: 1,
       },
       {
         jenisAlur: "Keluar",
@@ -37,8 +37,8 @@ module.exports = {
         jumlah: 10,
         lokasiProduk: "Toko Online",
         keterangan: "Penjualan online (e-commerce).",
-        variasiID: 8,
-        adminID: 2,
+        variasiID: 4, // disesuaikan
+        adminID: 1,
       },
     ]);
   },

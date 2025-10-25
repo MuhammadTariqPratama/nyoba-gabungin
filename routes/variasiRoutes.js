@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const variasiController = require("../controllers/variasiController");
 const verifyToken = require("../middlewares/authJWT");
-const upload = require("../middlewares/upload");
+const { upload, compressImage } = require("../middlewares/uploadMiddleware");
 
 /**
  * @swagger

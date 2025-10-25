@@ -20,8 +20,8 @@ const Produk = sequelize.define("Produk", {
     allowNull: true
   }
 }, {
-  tableName: "Produk",
-  timestamps: true
+  tableName: "produk", // gunakan huruf kecil
+  timestamps: true,    // penting untuk createdAt dan updatedAt
 });
 
 module.exports = Produk;
