@@ -1,44 +1,43 @@
 "use strict";
 
-/** @type {import('sequelize-cli').Migration} */
+/** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert("variasi", [
       {
-        produkID: 1, // pastikan produkID ini sudah ada di tabel 'produk'
+        produkID: 1,
         namaVariasi: "Ukuran Kecil",
-        harga: 25000.00,
+        harga: 25000.0,
         stok: 100,
         fotoVariasi: "variasi_kecil.jpg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
       {
         produkID: 2,
         namaVariasi: "Ukuran Sedang",
-        harga: 35000.00,
+        harga: 35000.0,
         stok: 80,
         fotoVariasi: "variasi_sedang.jpg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
       {
-        produkID: 3, // contoh variasi produk lain
+        produkID: 3,
         namaVariasi: "Warna Merah",
-        harga: 40000.00,
+        harga: 40000.0,
         stok: 50,
         fotoVariasi: "variasi_merah.jpg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
       {
         produkID: 4,
         namaVariasi: "Warna Hitam",
-        harga: 42000.00,
+        harga: 42000.0,
         stok: 40,
         fotoVariasi: "variasi_hitam.jpg",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      },
+      {
+        produkID: 5,
+        namaVariasi: "Ukuran Sedang",
+        harga: 35000.0,
+        stok: 80,
+        fotoVariasi: "variasi_sedang.jpg",
       },
     ]);
   },

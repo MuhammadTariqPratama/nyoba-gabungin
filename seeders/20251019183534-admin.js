@@ -1,11 +1,9 @@
 "use strict";
-
 const bcrypt = require("bcryptjs");
 
 /** @type {import('sequelize-cli').Seeder} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Enkripsi password sebelum diinsert
     const hashedAdmin = await bcrypt.hash("admin123", 10);
     const hashedStaff = await bcrypt.hash("staff123", 10);
 
