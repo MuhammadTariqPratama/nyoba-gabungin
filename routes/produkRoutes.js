@@ -1,4 +1,6 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
 const router = express.Router();
 const { upload, compressImage } = require("../middlewares/uploadMiddleware");
 const Produk = require("../models/produk");
@@ -22,48 +24,25 @@ const verifyToken = require("../middlewares/authJWT");
  *       properties:
  *         produkID:
  *           type: integer
- *           description: ID unik produk
  *           example: 1
  *         namaProduk:
  *           type: string
- *           description: Nama produk
  *           example: Kaos Polos
  *         deskripsi:
  *           type: string
- *           description: Deskripsi produk
  *           example: Kaos polos berbahan katun premium
  *         fotoProduk:
  *           type: string
- *           description: Path atau URL foto produk
  *           example: uploads/produk/kaos_polos.jpg
  *         createdAt:
  *           type: string
  *           format: date-time
- *           example: "2025-10-07T10:00:00Z"
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           example: "2025-10-07T10:10:00Z"
  */
 
-/**
- * @swagger
- * /produk:
- *   get:
- *     summary: Ambil semua produk
- *     tags: [Produk]
- *     responses:
- *       200:
- *         description: Daftar semua produk
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Produk'
- *       500:
- *         description: Terjadi kesalahan pada server
- */
+// 🔹 GET Semua Produk
 router.get("/", async (req, res) => {
   try {
     const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -80,45 +59,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /produk:
- *   post:
- *     summary: Tambah produk baru (dengan upload foto dan kompresi)
- *     tags: [Produk]
- *     consumes:
- *       - multipart/form-data
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - namaProduk
- *             properties:
- *               namaProduk:
- *                 type: string
- *                 example: "Kemeja Batik"
- *               deskripsi:
- *                 type: string
- *                 example: "Kemeja batik dengan motif modern"
- *               fotoProduk:
- *                 type: string
- *                 format: binary
- *                 description: Gambar produk
- *     responses:
- *       201:
- *         description: Produk berhasil ditambahkan
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Produk'
- *       400:
- *         description: Data tidak valid
- *       500:
- *         description: Terjadi kesalahan pada server
- */
+// 🔹 POST Tambah Produk
 router.post("/", verifyToken, upload.single("fotoProduk"), compressImage, async (req, res) => {
   try {
     const { namaProduk, deskripsi } = req.body;
@@ -152,29 +93,7 @@ router.post("/", verifyToken, upload.single("fotoProduk"), compressImage, async 
   }
 });
 
-/**
- * @swagger
- * /produk/{id}:
- *   delete:
- *     summary: Hapus produk berdasarkan ID (dan hapus foto dari server)
- *     tags: [Produk]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID produk yang ingin dihapus
- *     responses:
- *       200:
- *         description: Produk berhasil dihapus
- *       404:
- *         description: Produk tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
- */
+// 🔹 DELETE Produk + Foto
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const produk = await Produk.findByPk(req.params.id);
@@ -185,7 +104,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
 
     // Hapus file foto jika ada
     if (produk.fotoProduk) {
-      const fs = require("fs");
       const filePath = path.join("public", produk.fotoProduk);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
@@ -194,6 +112,32 @@ router.delete("/:id", verifyToken, async (req, res) => {
     res.json({ message: "🗑️ Produk berhasil dihapus!" });
   } catch (error) {
     res.status(500).json({ message: "Gagal menghapus produk", error: error.message });
+  }
+});
+
+// 🔹 DELETE Foto Produk Saja
+router.delete("/:id/hapus-foto", verifyToken, async (req, res) => {
+  try {
+    const produk = await Produk.findByPk(req.params.id);
+    if (!produk) {
+      return res.status(404).json({ message: "Produk tidak ditemukan" });
+    }
+
+    if (!produk.fotoProduk) {
+      return res.status(400).json({ message: "Produk ini tidak memiliki foto untuk dihapus" });
+    }
+
+    const filePath = path.join("public", produk.fotoProduk);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    await produk.update({ fotoProduk: null });
+
+    res.status(200).json({ message: "🧹 Foto produk berhasil dihapus tanpa menghapus datanya!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Gagal menghapus foto produk", error: error.message });
   }
 });
 

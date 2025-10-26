@@ -119,19 +119,37 @@ exports.update = async (req, res) => {
   }
 };
 
-// 📍 Hapus produk + foto dari folder
-exports.delete = async (req, res) => {
+// 🔹 Hapus hanya foto produk tanpa hapus data produk
+exports.deletePhoto = async (req, res) => {
   try {
     const produk = await Produk.findByPk(req.params.id);
-    if (!produk) return res.status(404).json({ message: "Produk tidak ditemukan" });
-
-    if (produk.fotoProduk && fs.existsSync(produk.fotoProduk)) {
-      fs.unlinkSync(produk.fotoProduk);
+    if (!produk) {
+      return res.status(404).json({ message: "Produk tidak ditemukan" });
     }
 
-    await produk.destroy();
-    res.status(204).json({ message: "Produk berhasil dihapus" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    if (!produk.fotoProduk) {
+      return res.status(400).json({ message: "Produk ini tidak memiliki foto." });
+    }
+
+    const filePath = path.join(__dirname, "..", "public", "uploads", "produk", path.basename(produk.fotoProduk));
+
+    // 🧹 Hapus file fisik jika ada
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`🧹 File dihapus: ${filePath}`);
+    } else {
+      console.warn(`⚠️ File tidak ditemukan di path: ${filePath}`);
+    }
+
+    // Update database
+    produk.fotoProduk = null;
+    await produk.save();
+
+    res.json({ message: "🧹 Foto produk berhasil dihapus!" });
+  } catch (error) {
+    console.error("❌ Gagal menghapus foto produk:", error);
+    res.status(500).json({ message: "Gagal menghapus foto produk", error: error.message });
   }
 };
+
+
