@@ -12,11 +12,11 @@ const Produk = require("./models/produk");
 const Pemasok = require("./models/pemasok");
 const variasi = require("./models/variasi");
 const AlurBarang = require("./models/alurBarang");
-sequelize.sync();
+// sequelize.sync();
 
-sequelize.sync({ alter: true })
-  .then(() => console.log("Database synced"))
-  .catch(err => console.error(err));
+// sequelize.sync({ alter: true })
+//   .then(() => console.log("Database synced"))
+//   .catch(err => console.error(err));
 
 
 
