@@ -1,11 +1,12 @@
 const { Op } = require("sequelize");
+const fs = require("fs");
+const path = require("path");
 const Variasi = require("../models/variasi");
 const Produk = require("../models/produk");
 
 // Ambil semua variasi dengan pagination, search, dan filter harga
 exports.getAll = async (req, res) => {
   try {
-    // Ambil parameter query
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || "";
@@ -14,7 +15,6 @@ exports.getAll = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // Buat kondisi pencarian dan filter harga
     const whereClause = {
       [Op.and]: [
         { harga: { [Op.between]: [minHarga, maxHarga] } },
@@ -27,7 +27,6 @@ exports.getAll = async (req, res) => {
       });
     }
 
-    // Ambil data dari database
     const { rows: variasi, count: totalItems } = await Variasi.findAndCountAll({
       where: whereClause,
       include: { model: Produk, as: "produk" },
@@ -62,7 +61,10 @@ exports.getById = async (req, res) => {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }
 
-    res.status(200).json({ message: `Data variasi dengan ID ${req.params.id} berhasil diambil` }); 
+    res.status(200).json({
+      message: `Data variasi dengan ID ${req.params.id} berhasil diambil`,
+      data: variasi,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -100,6 +102,10 @@ exports.update = async (req, res) => {
 
     let fotoVariasi = variasi.fotoVariasi;
     if (req.file) {
+      // Hapus foto lama jika ada
+      if (fotoVariasi && fs.existsSync(path.join("public", fotoVariasi))) {
+        fs.unlinkSync(path.join("public", fotoVariasi));
+      }
       fotoVariasi = `uploads/variasi/${req.file.filename}`;
     }
 
@@ -116,7 +122,7 @@ exports.update = async (req, res) => {
   }
 };
 
-// Hapus variasi
+// Hapus variasi (data + foto)
 exports.delete = async (req, res) => {
   try {
     const variasi = await Variasi.findByPk(req.params.id);
@@ -124,9 +130,44 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }
 
+    // Hapus foto jika ada
+    if (variasi.fotoVariasi && fs.existsSync(path.join("public", variasi.fotoVariasi))) {
+      fs.unlinkSync(path.join("public", variasi.fotoVariasi));
+    }
+
     await variasi.destroy();
-    res.status(204).json({ message: "Variasi dihapus" });
+    res.status(200).json({ message: "Variasi dihapus" });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// 🔹 Hapus hanya foto variasi tanpa hapus data
+exports.deletePhoto = async (req, res) => {
+  try {
+    const variasi = await Variasi.findByPk(req.params.id);
+    if (!variasi) {
+      return res.status(404).json({ message: "Variasi tidak ditemukan" });
+    }
+
+    if (!variasi.fotoVariasi) {
+      return res.status(400).json({ message: "Variasi ini tidak memiliki foto." });
+    }
+
+    const filePath = path.join("public", variasi.fotoVariasi);
+
+    // Hapus file dari folder jika ada
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Update data di database
+    variasi.fotoVariasi = null;
+    await variasi.save();
+
+    res.status(200).json({ message: "🧹 Foto variasi berhasil dihapus!" });
+  } catch (error) {
+    console.error("Gagal menghapus foto variasi:", error);
+    res.status(500).json({ message: "Gagal menghapus foto variasi", error: error.message });
   }
 };

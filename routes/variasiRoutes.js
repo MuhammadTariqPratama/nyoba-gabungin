@@ -46,7 +46,7 @@ const { upload, compressImage } = require("../middlewares/uploadMiddleware");
  *         fotoVariasi:
  *           type: string
  *           description: URL atau path gambar variasi
- *           example: "uploads/ukuran_l.jpg"
+ *           example: "uploads/variasi/ukuran_l.jpg"
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -79,12 +79,6 @@ const { upload, compressImage } = require("../middlewares/uploadMiddleware");
  *     responses:
  *       200:
  *         description: Daftar semua variasi
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Variasi'
  *       500:
  *         description: Terjadi kesalahan pada server
  */
@@ -100,16 +94,11 @@ router.get("/", variasiController.getAll);
  *       - in: path
  *         name: id
  *         required: true
- *         description: ID variasi
  *         schema:
  *           type: integer
  *     responses:
  *       200:
  *         description: Detail variasi ditemukan
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Variasi'
  *       404:
  *         description: Variasi tidak ditemukan
  *       500:
@@ -128,7 +117,7 @@ router.get("/:id", variasiController.getById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -150,20 +139,10 @@ router.get("/:id", variasiController.getById);
  *                 example: 30
  *               fotoVariasi:
  *                 type: string
- *                 example: "uploads/ukuran_xl.jpg"
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Variasi berhasil ditambahkan
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Variasi ditambahkan
- *                 variasi:
- *                   $ref: '#/components/schemas/Variasi'
  *       400:
  *         description: Input tidak lengkap
  *       404:
@@ -171,7 +150,7 @@ router.get("/:id", variasiController.getById);
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.post("/", verifyToken, upload.single("fotoVariasi"), variasiController.create);
+router.post("/", verifyToken, upload.single("fotoVariasi"), compressImage, variasiController.create);
 
 /**
  * @swagger
@@ -187,11 +166,10 @@ router.post("/", verifyToken, upload.single("fotoVariasi"), variasiController.cr
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID variasi yang akan diperbarui
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -206,7 +184,7 @@ router.post("/", verifyToken, upload.single("fotoVariasi"), variasiController.cr
  *                 example: 20
  *               fotoVariasi:
  *                 type: string
- *                 example: "uploads/ukuran_m.jpg"
+ *                 format: binary
  *     responses:
  *       200:
  *         description: Variasi berhasil diperbarui
@@ -215,7 +193,7 @@ router.post("/", verifyToken, upload.single("fotoVariasi"), variasiController.cr
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.put("/:id", verifyToken, upload.single("fotoVariasi"), variasiController.update);
+router.put("/:id", verifyToken, upload.single("fotoVariasi"), compressImage, variasiController.update);
 
 /**
  * @swagger
@@ -231,7 +209,6 @@ router.put("/:id", verifyToken, upload.single("fotoVariasi"), variasiController.
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID variasi yang ingin dihapus
  *     responses:
  *       200:
  *         description: Variasi berhasil dihapus
@@ -241,5 +218,32 @@ router.put("/:id", verifyToken, upload.single("fotoVariasi"), variasiController.
  *         description: Terjadi kesalahan pada server
  */
 router.delete("/:id", verifyToken, variasiController.delete);
+
+/**
+ * @swagger
+ * /variasi/{id}/hapus-foto:
+ *   delete:
+ *     summary: Hapus hanya foto variasi (tanpa menghapus datanya)
+ *     tags: [Variasi]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID variasi
+ *     responses:
+ *       200:
+ *         description: Foto variasi berhasil dihapus
+ *       400:
+ *         description: Variasi tidak memiliki foto
+ *       404:
+ *         description: Variasi tidak ditemukan
+ *       500:
+ *         description: Terjadi kesalahan pada server
+ */
+router.delete("/:id/hapus-foto", verifyToken, variasiController.deletePhoto);
 
 module.exports = router;
