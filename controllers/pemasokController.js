@@ -31,7 +31,7 @@ exports.getAll = async (req, res) => {
       order: [["namaPemasok", "ASC"]],
     });
 
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil ${pemasok.length} data pemasok.`,
       currentPage: page,
       totalPages: Math.ceil(totalItems / limit),
@@ -54,7 +54,7 @@ exports.getById = async (req, res) => {
     if (!pemasok) {
       return res.status(404).json({ message: `Pemasok dengan ID ${req.params.id} tidak ditemukan.` });
     }
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil data pemasok dengan ID ${req.params.id}.`,
       data: pemasok,
     });
@@ -88,7 +88,7 @@ exports.update = async (req, res) => {
     }
 
     await pemasok.update({ namaPemasok, alamatPemasok, noTelp, keterangan, email });
-    res.json({
+    res.status(200).json({
       message: `Data pemasok dengan ID ${req.params.id} berhasil diperbarui.`,
       data: pemasok,
     });
@@ -106,7 +106,7 @@ exports.delete = async (req, res) => {
     }
 
     await pemasok.destroy();
-    res.json({
+    res.status(204).json({
       message: `Pemasok dengan ID ${req.params.id} berhasil dihapus.`,
       deletedData: pemasok,
     });

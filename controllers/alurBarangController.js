@@ -37,7 +37,7 @@ exports.getAll = async (req, res) => {
       order: [["tanggal", "DESC"]],
     });
 
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil ${alurBarang.length} data alur barang.`,
       currentPage: page,
       totalPages: Math.ceil(totalItems / limit),
@@ -64,7 +64,7 @@ exports.getById = async (req, res) => {
       return res.status(404).json({ message: `Alur barang dengan ID ${req.params.id} tidak ditemukan.` });
     }
 
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil data alur barang dengan ID ${req.params.id}.`,
       data: alurBarang,
     });
@@ -121,7 +121,7 @@ exports.update = async (req, res) => {
       adminID,
     });
 
-    res.json({
+    res.status(200).json({
       message: `Data alur barang dengan ID ${req.params.id} berhasil diperbarui.`,
       data: alurBarang,
     });
@@ -140,7 +140,7 @@ exports.delete = async (req, res) => {
     }
 
     await alurBarang.destroy();
-    res.json({
+    res.status(204).json({
       message: `Alur barang dengan ID ${req.params.id} berhasil dihapus.`,
       deletedData: alurBarang,
     });

@@ -31,7 +31,8 @@ exports.getAll = async (req, res) => {
         : null,
     }));
 
-    res.json({
+    res.status(200).json({
+      message: "Data produk berhasil diambil",
       currentPage: page,
       totalPages: Math.ceil(totalItems / limit),
       totalItems,
@@ -55,7 +56,10 @@ exports.getById = async (req, res) => {
       ? `${baseUrl}/uploads/produk/${path.basename(produk.fotoProduk)}`
       : null;
 
-    res.json(data);
+    res.status(200).json({
+      message: `Data produk dengan ID ${req.params.id} berhasil diambil`
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -101,7 +105,7 @@ exports.update = async (req, res) => {
     await produk.update({ namaProduk, deskripsi, fotoProduk });
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    res.json({
+    res.status(200).json({
       message: "Produk berhasil diperbarui",
       data: {
         ...produk.toJSON(),
@@ -126,7 +130,7 @@ exports.delete = async (req, res) => {
     }
 
     await produk.destroy();
-    res.json({ message: "Produk berhasil dihapus" });
+    res.status(204).json({ message: "Produk berhasil dihapus" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
