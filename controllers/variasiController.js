@@ -38,7 +38,8 @@ exports.getAll = async (req, res) => {
 
     const totalPages = Math.ceil(totalItems / limit);
 
-    res.json({
+    res.status(200).json({
+      message: "Data variasi berhasil diambil",
       currentPage: page,
       totalPages,
       totalItems,
@@ -61,7 +62,7 @@ exports.getById = async (req, res) => {
       return res.status(404).json({ message: "Variasi tidak ditemukan" });
     }
 
-    res.json(variasi);
+    res.status(200).json({ message: `Data variasi dengan ID ${req.params.id} berhasil diambil` }); 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -109,7 +110,7 @@ exports.update = async (req, res) => {
       fotoVariasi,
     });
 
-    res.json({ message: "Variasi diperbarui", variasi });
+    res.status(200).json({ message: "Variasi diperbarui", variasi });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -124,7 +125,7 @@ exports.delete = async (req, res) => {
     }
 
     await variasi.destroy();
-    res.json({ message: "Variasi dihapus" });
+    res.status(204).json({ message: "Variasi dihapus" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -28,7 +28,7 @@ exports.getAll = async (req, res) => {
       order: [["adminID", "ASC"]],
     });
 
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil ${admin.length} data admin.`,
       currentPage: page,
       totalPages: Math.ceil(totalItems / limit),
@@ -53,7 +53,7 @@ exports.getById = async (req, res) => {
         message: `Admin dengan ID ${req.params.id} tidak ditemukan.`,
       });
     }
-    res.json({
+    res.status(200).json({
       message: `Berhasil mengambil data admin dengan ID ${req.params.id}.`,
       data: admin,
     });
@@ -112,7 +112,7 @@ exports.update = async (req, res) => {
     }
 
     await admin.update(updateData);
-    res.json({
+    res.status(200).json({
       message: `Data admin dengan ID ${req.params.id} berhasil diperbarui.`,
       data: { id: admin.adminID, username: admin.username },
     });
@@ -135,7 +135,7 @@ exports.delete = async (req, res) => {
     }
 
     await admin.destroy();
-    res.json({
+    res.status(204).json({
       message: `Admin dengan ID ${req.params.id} berhasil dihapus.`,
       deletedData: { id: admin.adminID, username: admin.username },
     });
@@ -172,7 +172,7 @@ exports.login = async (req, res) => {
       { expiresIn: "2h" }
     );
 
-    res.json({
+    res.status(201).json({
       message: "Login berhasil.",
       data: {
         id: admin.adminID,
