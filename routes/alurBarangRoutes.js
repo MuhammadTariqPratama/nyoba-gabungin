@@ -1,7 +1,7 @@
-const express = require("express")
-const router = express.Router()
-const alurBarangController = require("../controllers/alurBarangController")
-const verifyToken = require("../middlewares/authJWT")
+const express = require("express");
+const router = express.Router();
+const alurBarangController = require("../controllers/alurBarangController");
+const verifyToken = require("../middlewares/authJWT");
 
 /**
  * @swagger
@@ -13,6 +13,12 @@ const verifyToken = require("../middlewares/authJWT")
 /**
  * @swagger
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *
  *   schemas:
  *     AlurBarang:
  *       type: object
@@ -54,17 +60,61 @@ const verifyToken = require("../middlewares/authJWT")
  * @swagger
  * /alurbarang:
  *   get:
- *     summary: Ambil semua data alur barang (termasuk admin dan variasi)
+ *     summary: Ambil semua data alur barang (dengan pagination, search, dan filter)
  *     tags: [AlurBarang]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Halaman yang ingin ditampilkan (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Jumlah data per halaman (default 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Pencarian berdasarkan jenis alur
+ *       - in: query
+ *         name: lokasi
+ *         schema:
+ *           type: string
+ *         description: Filter berdasarkan lokasi produk
  *     responses:
  *       200:
- *         description: Daftar semua alur barang berhasil diambil
+ *         description: Daftar alur barang berhasil diambil
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Berhasil mengambil 2 data alur barang."
+ *               currentPage: 1
+ *               totalPages: 1
+ *               totalItems: 2
+ *               perPage: 10
+ *               data:
+ *                 - alurBarangID: 1
+ *                   jenisAlur: Masuk
+ *                   tanggal: 2025-10-05
+ *                   jumlah: 30
+ *                   lokasiProduk: Gudang A
+ *                   keterangan: Barang diterima dari pemasok utama
+ *                   variasi:
+ *                     variasiID: 3
+ *                     namaVariasi: "Botol 500ml"
+ *                     stok: 120
+ *                     harga: 15000
+ *                   admin:
+ *                     adminID: 1
+ *                     username: "admin"
  *       401:
- *         description: Token tidak valid
+ *         description: Token tidak valid atau tidak disertakan
  */
-router.get("/", verifyToken, alurBarangController.getAll)
+router.get("/", verifyToken, alurBarangController.getAll);
 
 /**
  * @swagger
@@ -80,15 +130,26 @@ router.get("/", verifyToken, alurBarangController.getAll)
  *         schema:
  *           type: integer
  *         required: true
+ *         description: ID alur barang
  *     responses:
  *       200:
  *         description: Data alur barang berhasil ditemukan
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Berhasil mengambil data alur barang dengan ID 1."
+ *               data:
+ *                 alurBarangID: 1
+ *                 jenisAlur: Keluar
+ *                 tanggal: 2025-10-06
+ *                 jumlah: 15
+ *                 lokasiProduk: Toko Utama
+ *                 variasiID: 3
+ *                 adminID: 1
  *       404:
  *         description: Data tidak ditemukan
- *       401:
- *         description: Token tidak valid
  */
-router.get("/:id", verifyToken, alurBarangController.getById)
+router.get("/:id", verifyToken, alurBarangController.getById);
 
 /**
  * @swagger
@@ -107,12 +168,22 @@ router.get("/:id", verifyToken, alurBarangController.getById)
  *     responses:
  *       201:
  *         description: Data alur barang berhasil ditambahkan
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Alur barang baru berhasil ditambahkan."
+ *               data:
+ *                 alurBarangID: 5
+ *                 jenisAlur: Masuk
+ *                 tanggal: 2025-10-07
+ *                 jumlah: 50
+ *                 lokasiProduk: Gudang B
+ *                 variasiID: 2
+ *                 adminID: 1
  *       400:
  *         description: Data tidak lengkap
- *       401:
- *         description: Token tidak valid
  */
-router.post("/", verifyToken, alurBarangController.create)
+router.post("/", verifyToken, alurBarangController.create);
 
 /**
  * @swagger
@@ -128,6 +199,7 @@ router.post("/", verifyToken, alurBarangController.create)
  *         schema:
  *           type: integer
  *         required: true
+ *         description: ID alur barang yang ingin diperbarui
  *     requestBody:
  *       required: true
  *       content:
@@ -139,10 +211,8 @@ router.post("/", verifyToken, alurBarangController.create)
  *         description: Data alur barang berhasil diperbarui
  *       404:
  *         description: Data tidak ditemukan
- *       401:
- *         description: Token tidak valid
  */
-router.put("/:id", verifyToken, alurBarangController.update)
+router.put("/:id", verifyToken, alurBarangController.update);
 
 /**
  * @swagger
@@ -158,14 +228,13 @@ router.put("/:id", verifyToken, alurBarangController.update)
  *         schema:
  *           type: integer
  *         required: true
+ *         description: ID alur barang yang ingin dihapus
  *     responses:
- *       200:
+ *       204:
  *         description: Data alur barang berhasil dihapus
  *       404:
  *         description: Data tidak ditemukan
- *       401:
- *         description: Token tidak valid
  */
-router.delete("/:id", verifyToken, alurBarangController.delete)
+router.delete("/:id", verifyToken, alurBarangController.delete);
 
-module.exports = router
+module.exports = router;
