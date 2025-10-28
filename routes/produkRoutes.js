@@ -1,10 +1,12 @@
+// routes/produkRoutes.js
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
 const router = express.Router();
+const produkController = require("../controllers/produkController");
+const verifyToken = require("../middlewares/authJWT");
 const { upload, compressImage } = require("../middlewares/uploadMiddleware");
 const Produk = require("../models/produk");
-const verifyToken = require("../middlewares/authJWT");
+const fs = require("fs");
+const path = require("path");
 
 /**
  * @swagger
@@ -24,16 +26,16 @@ const verifyToken = require("../middlewares/authJWT");
  *       properties:
  *         produkID:
  *           type: integer
- *           example: 1
+ *           description: ID unik produk
  *         namaProduk:
  *           type: string
- *           example: Kaos Polos
+ *           description: Nama produk
  *         deskripsi:
  *           type: string
- *           example: Kaos polos berbahan katun premium
+ *           description: Deskripsi produk
  *         fotoProduk:
  *           type: string
- *           example: uploads/produk/kaos_polos.jpg
+ *           description: Path atau URL foto produk
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -42,103 +44,230 @@ const verifyToken = require("../middlewares/authJWT");
  *           format: date-time
  */
 
-// 🔹 GET Semua Produk
-router.get("/", async (req, res) => {
-  try {
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const produk = await Produk.findAll();
+/**
+ * @swagger
+ * /produk:
+ *   get:
+ *     summary: Ambil semua produk (dengan pagination & search opsional)
+ *     tags: [Produk]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Nomor halaman untuk pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Jumlah data per halaman
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Kata kunci pencarian nama produk
+ *     responses:
+ *       200:
+ *         description: Daftar produk berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Data produk berhasil diambil
+ *                 currentPage:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 totalItems:
+ *                   type: integer
+ *                 perPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Produk'
+ */
+router.get("/", produkController.getAll);
 
-    const data = produk.map(p => ({
-      ...p.toJSON(),
-      fotoUrl: p.fotoProduk ? `${baseUrl}/${p.fotoProduk}` : null,
-    }));
+/**
+ * @swagger
+ * /produk/{id}:
+ *   get:
+ *     summary: Ambil produk berdasarkan ID
+ *     tags: [Produk]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID produk yang ingin diambil
+ *     responses:
+ *       200:
+ *         description: Data produk berhasil diambil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Produk'
+ *       404:
+ *         description: Produk tidak ditemukan
+ */
+router.get("/:id", produkController.getById);
 
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: "Gagal mengambil data produk", error: error.message });
-  }
-});
+/**
+ * @swagger
+ * /produk:
+ *   post:
+ *     summary: Tambah produk baru (dengan upload foto opsional)
+ *     tags: [Produk]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               namaProduk:
+ *                 type: string
+ *                 example: Hoodie Hangat
+ *               deskripsi:
+ *                 type: string
+ *                 example: Hoodie berbahan fleece premium
+ *               fotoProduk:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Produk berhasil ditambahkan
+ *       400:
+ *         description: Validasi gagal
+ *       401:
+ *         description: Token tidak valid
+ */
+router.post(
+  "/",
+  verifyToken,
+  upload.single("fotoProduk"),
+  compressImage,
+  produkController.create
+);
 
-// 🔹 POST Tambah Produk
-router.post("/", verifyToken, upload.single("fotoProduk"), compressImage, async (req, res) => {
-  try {
-    const { namaProduk, deskripsi } = req.body;
+/**
+ * @swagger
+ * /produk/{id}:
+ *   put:
+ *     summary: Perbarui data produk berdasarkan ID (dengan upload foto opsional)
+ *     tags: [Produk]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID produk yang ingin diperbarui
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               namaProduk:
+ *                 type: string
+ *                 example: Kaos Polos Premium
+ *               deskripsi:
+ *                 type: string
+ *                 example: Kaos polos bahan katun combed 30s
+ *               fotoProduk:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Produk berhasil diperbarui
+ *       404:
+ *         description: Produk tidak ditemukan
+ *       401:
+ *         description: Token tidak valid
+ */
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("fotoProduk"),
+  compressImage,
+  produkController.update
+);
 
-    if (!namaProduk) {
-      return res.status(400).json({ message: "Nama produk wajib diisi!" });
-    }
-
-    let fotoProduk = null;
-    if (req.file) {
-      fotoProduk = req.file.path.replace(/\\/g, "/").replace("public/", "");
-    }
-
-    const produkBaru = await Produk.create({
-      namaProduk,
-      deskripsi,
-      fotoProduk,
-    });
-
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    res.status(201).json({
-      message: "✅ Produk berhasil ditambahkan!",
-      data: {
-        ...produkBaru.toJSON(),
-        fotoUrl: fotoProduk ? `${baseUrl}/${fotoProduk}` : null,
-      },
-    });
-  } catch (error) {
-    console.error("❌ Gagal menambah produk:", error);
-    res.status(500).json({ message: "Terjadi kesalahan server", error: error.message });
-  }
-});
-
-// 🔹 DELETE Produk + Foto
+/**
+ * @swagger
+ * /produk/{id}:
+ *   delete:
+ *     summary: Hapus produk berdasarkan ID
+ *     tags: [Produk]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID produk yang ingin dihapus
+ *     responses:
+ *       200:
+ *         description: Produk berhasil dihapus
+ *       404:
+ *         description: Produk tidak ditemukan
+ *       401:
+ *         description: Token tidak valid
+ */
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const produk = await Produk.findByPk(req.params.id);
+    if (!produk) return res.status(404).json({ message: "Produk tidak ditemukan" });
 
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
-    }
-
-    // Hapus file foto jika ada
-    if (produk.fotoProduk) {
-      const filePath = path.join("public", produk.fotoProduk);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (produk.fotoProduk && fs.existsSync(produk.fotoProduk)) {
+      fs.unlinkSync(produk.fotoProduk);
     }
 
     await produk.destroy();
-    res.json({ message: "🗑️ Produk berhasil dihapus!" });
-  } catch (error) {
-    res.status(500).json({ message: "Gagal menghapus produk", error: error.message });
+    res.json({ message: "Produk berhasil dihapus" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
-// 🔹 DELETE Foto Produk Saja
-router.delete("/:id/hapus-foto", verifyToken, async (req, res) => {
-  try {
-    const produk = await Produk.findByPk(req.params.id);
-    if (!produk) {
-      return res.status(404).json({ message: "Produk tidak ditemukan" });
-    }
-
-    if (!produk.fotoProduk) {
-      return res.status(400).json({ message: "Produk ini tidak memiliki foto untuk dihapus" });
-    }
-
-    const filePath = path.join("public", produk.fotoProduk);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
-    await produk.update({ fotoProduk: null });
-
-    res.status(200).json({ message: "🧹 Foto produk berhasil dihapus tanpa menghapus datanya!" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Gagal menghapus foto produk", error: error.message });
-  }
-});
+/**
+ * @swagger
+ * /produk/{id}/foto:
+ *   delete:
+ *     summary: Hapus hanya foto produk tanpa menghapus data produknya
+ *     tags: [Produk]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID produk yang ingin dihapus fotonya
+ *     responses:
+ *       200:
+ *         description: Foto produk berhasil dihapus
+ *       404:
+ *         description: Produk tidak ditemukan
+ *       400:
+ *         description: Produk tidak memiliki foto
+ *       401:
+ *         description: Token tidak valid
+ */
+router.delete("/:id/foto", verifyToken, produkController.deletePhoto);
 
 module.exports = router;

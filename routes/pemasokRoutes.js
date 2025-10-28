@@ -18,9 +18,6 @@ const verifyToken = require("../middlewares/authJWT");
  *       type: object
  *       required:
  *         - namaPemasok
- *         - alamatPemasok
- *         - noTelp
- *         - email
  *       properties:
  *         pemasokID:
  *           type: integer
@@ -52,8 +49,26 @@ const verifyToken = require("../middlewares/authJWT");
  * @swagger
  * /pemasok:
  *   get:
- *     summary: Ambil semua data pemasok
+ *     summary: Ambil semua data pemasok (dengan pagination & search)
  *     tags: [Pemasok]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Nomor halaman (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Jumlah data per halaman (default 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Pencarian berdasarkan nama pemasok
  *     responses:
  *       200:
  *         description: Daftar semua pemasok berhasil diambil
@@ -65,12 +80,23 @@ const verifyToken = require("../middlewares/authJWT");
  *                 message:
  *                   type: string
  *                   example: Berhasil mengambil 3 data pemasok.
+ *                 currentPage:
+ *                   type: integer
+ *                   example: 1
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 1
+ *                 totalItems:
+ *                   type: integer
+ *                   example: 3
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Pemasok'
+ *       401:
+ *         description: Token tidak valid
  */
-router.get("/", pemasokController.getAll);
+router.get("/", verifyToken, pemasokController.getAll);
 
 /**
  * @swagger
@@ -78,12 +104,14 @@ router.get("/", pemasokController.getAll);
  *   get:
  *     summary: Ambil data pemasok berdasarkan ID
  *     tags: [Pemasok]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: integer
- *         required: true
  *         description: ID pemasok yang ingin diambil
  *     responses:
  *       200:
@@ -94,8 +122,10 @@ router.get("/", pemasokController.getAll);
  *               $ref: '#/components/schemas/Pemasok'
  *       404:
  *         description: Data pemasok tidak ditemukan
+ *       401:
+ *         description: Token tidak valid
  */
-router.get("/:id", pemasokController.getById);
+router.get("/:id", verifyToken, pemasokController.getById);
 
 /**
  * @swagger
@@ -124,8 +154,10 @@ router.get("/:id", pemasokController.getById);
  *                   example: Pemasok "PT Sumber Rezeki" berhasil ditambahkan.
  *                 data:
  *                   $ref: '#/components/schemas/Pemasok'
+ *       400:
+ *         description: Validasi gagal
  *       401:
- *         description: Token tidak valid atau tidak ada
+ *         description: Token tidak valid
  */
 router.post("/", verifyToken, pemasokController.create);
 
@@ -176,7 +208,7 @@ router.put("/:id", verifyToken, pemasokController.update);
  *         required: true
  *         description: ID pemasok yang ingin dihapus
  *     responses:
- *       200:
+ *       204:
  *         description: Data pemasok berhasil dihapus
  *       404:
  *         description: Data pemasok tidak ditemukan

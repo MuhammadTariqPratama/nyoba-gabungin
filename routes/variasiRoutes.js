@@ -24,61 +24,75 @@ const { upload, compressImage } = require("../middlewares/uploadMiddleware");
  *       properties:
  *         variasiID:
  *           type: integer
- *           description: ID unik variasi
  *           example: 1
  *         produkID:
  *           type: integer
- *           description: ID produk yang terkait
  *           example: 3
  *         namaVariasi:
  *           type: string
- *           description: Nama variasi produk
  *           example: Ukuran L
  *         harga:
  *           type: number
  *           format: decimal
- *           description: Harga variasi
  *           example: 125000.00
  *         stok:
  *           type: integer
- *           description: Jumlah stok variasi
  *           example: 50
  *         fotoVariasi:
  *           type: string
- *           description: URL atau path gambar variasi
  *           example: "uploads/variasi/ukuran_l.jpg"
  *         createdAt:
  *           type: string
  *           format: date-time
- *           example: "2025-10-07T10:00:00Z"
  *         updatedAt:
  *           type: string
  *           format: date-time
- *           example: "2025-10-07T10:10:00Z"
  *         produk:
  *           type: object
- *           description: Data produk yang berelasi
  *           properties:
  *             produkID:
  *               type: integer
  *               example: 3
  *             namaProduk:
  *               type: string
- *               example: "Kaos Polos"
- *             deskripsi:
- *               type: string
- *               example: "Kaos polos berbahan katun premium"
+ *               example: Kaos Polos
  */
 
 /**
  * @swagger
  * /variasi:
  *   get:
- *     summary: Ambil semua variasi beserta data produk terkait
+ *     summary: Ambil semua variasi dengan pagination, filter harga, dan pencarian
  *     tags: [Variasi]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Halaman data (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Jumlah data per halaman (default 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Cari berdasarkan nama variasi
+ *       - in: query
+ *         name: minHarga
+ *         schema:
+ *           type: number
+ *         description: Filter harga minimal
+ *       - in: query
+ *         name: maxHarga
+ *         schema:
+ *           type: number
+ *         description: Filter harga maksimal
  *     responses:
  *       200:
- *         description: Daftar semua variasi
+ *         description: Daftar variasi berhasil diambil
  *       500:
  *         description: Terjadi kesalahan pada server
  */
@@ -98,11 +112,9 @@ router.get("/", variasiController.getAll);
  *           type: integer
  *     responses:
  *       200:
- *         description: Detail variasi ditemukan
+ *         description: Data variasi ditemukan
  *       404:
  *         description: Variasi tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
  */
 router.get("/:id", variasiController.getById);
 
@@ -110,7 +122,7 @@ router.get("/:id", variasiController.getById);
  * @swagger
  * /variasi:
  *   post:
- *     summary: Tambah variasi baru (butuh token)
+ *     summary: Tambah variasi baru (dengan upload foto)
  *     tags: [Variasi]
  *     security:
  *       - bearerAuth: []
@@ -130,7 +142,7 @@ router.get("/:id", variasiController.getById);
  *                 example: 3
  *               namaVariasi:
  *                 type: string
- *                 example: "Ukuran XL"
+ *                 example: Ukuran XL
  *               harga:
  *                 type: number
  *                 example: 150000
@@ -143,20 +155,22 @@ router.get("/:id", variasiController.getById);
  *     responses:
  *       201:
  *         description: Variasi berhasil ditambahkan
- *       400:
- *         description: Input tidak lengkap
- *       404:
- *         description: Produk tidak ditemukan
  *       500:
  *         description: Terjadi kesalahan pada server
  */
-router.post("/", verifyToken, upload.single("fotoVariasi"), compressImage, variasiController.create);
+router.post(
+  "/",
+  verifyToken,
+  upload.single("fotoVariasi"),
+  compressImage,
+  variasiController.create
+);
 
 /**
  * @swagger
  * /variasi/{id}:
  *   put:
- *     summary: Perbarui data variasi berdasarkan ID (butuh token)
+ *     summary: Perbarui data variasi berdasarkan ID
  *     tags: [Variasi]
  *     security:
  *       - bearerAuth: []
@@ -175,13 +189,10 @@ router.post("/", verifyToken, upload.single("fotoVariasi"), compressImage, varia
  *             properties:
  *               namaVariasi:
  *                 type: string
- *                 example: "Ukuran M"
  *               harga:
  *                 type: number
- *                 example: 120000
  *               stok:
  *                 type: integer
- *                 example: 20
  *               fotoVariasi:
  *                 type: string
  *                 format: binary
@@ -190,16 +201,20 @@ router.post("/", verifyToken, upload.single("fotoVariasi"), compressImage, varia
  *         description: Variasi berhasil diperbarui
  *       404:
  *         description: Variasi tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
  */
-router.put("/:id", verifyToken, upload.single("fotoVariasi"), compressImage, variasiController.update);
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("fotoVariasi"),
+  compressImage,
+  variasiController.update
+);
 
 /**
  * @swagger
  * /variasi/{id}:
  *   delete:
- *     summary: Hapus variasi berdasarkan ID (butuh token)
+ *     summary: Hapus variasi berdasarkan ID
  *     tags: [Variasi]
  *     security:
  *       - bearerAuth: []
@@ -214,8 +229,6 @@ router.put("/:id", verifyToken, upload.single("fotoVariasi"), compressImage, var
  *         description: Variasi berhasil dihapus
  *       404:
  *         description: Variasi tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
  */
 router.delete("/:id", verifyToken, variasiController.delete);
 
@@ -223,7 +236,7 @@ router.delete("/:id", verifyToken, variasiController.delete);
  * @swagger
  * /variasi/{id}/hapus-foto:
  *   delete:
- *     summary: Hapus hanya foto variasi (tanpa menghapus datanya)
+ *     summary: Hapus hanya foto variasi tanpa hapus data
  *     tags: [Variasi]
  *     security:
  *       - bearerAuth: []
@@ -233,7 +246,6 @@ router.delete("/:id", verifyToken, variasiController.delete);
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID variasi
  *     responses:
  *       200:
  *         description: Foto variasi berhasil dihapus
@@ -241,8 +253,6 @@ router.delete("/:id", verifyToken, variasiController.delete);
  *         description: Variasi tidak memiliki foto
  *       404:
  *         description: Variasi tidak ditemukan
- *       500:
- *         description: Terjadi kesalahan pada server
  */
 router.delete("/:id/hapus-foto", verifyToken, variasiController.deletePhoto);
 
