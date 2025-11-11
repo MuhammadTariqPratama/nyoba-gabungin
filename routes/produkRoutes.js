@@ -50,6 +50,7 @@ const path = require("path");
  *   get:
  *     summary: Ambil semua produk (dengan pagination & search opsional)
  *     tags: [Produk]
+ *       security: []      
  *     parameters:
  *       - in: query
  *         name: page
@@ -98,6 +99,7 @@ router.get("/", produkController.getAll);
  *   get:
  *     summary: Ambil produk berdasarkan ID
  *     tags: [Produk]
+ *     security: []        # 🔓 Hilangkan logo gembok di Swagger
  *     parameters:
  *       - in: path
  *         name: id
