@@ -52,12 +52,24 @@ exports.getById = async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const data = produk.toJSON();
+
     data.fotoProduk = produk.fotoProduk
       ? `${baseUrl}/uploads/produk/${path.basename(produk.fotoProduk)}`
       : null;
 
+    // 🔹 Tambahkan URL fotoVariasi juga
+    if (data.variasi && data.variasi.length > 0) {
+      data.variasi = data.variasi.map(v => ({
+        ...v,
+        fotoVariasi: v.fotoVariasi
+          ? `${baseUrl}/uploads/variasi/${path.basename(v.fotoVariasi)}`
+          : null
+      }));
+    }
+
     res.status(200).json({
-      message: `Data produk dengan ID ${req.params.id} berhasil diambil`
+      message: `Data produk dengan ID ${req.params.id} berhasil diambil`,
+      data: data
     });
 
   } catch (err) {

@@ -74,9 +74,35 @@ const { upload, compressImage } = require("../middlewares/uploadMiddleware");
  * @swagger
  * /variasi:
  *   get:
- *     summary: Ambil semua variasi beserta data produk terkait
+ *     summary: Ambil semua variasi dengan pagination, filter harga, dan pencarian
  *     tags: [Variasi]
- *     security: []         # 🔓 Hilangkan gembok di Swagger
+ *     security: [] 
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Halaman data (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Jumlah data per halaman (default 10)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Cari berdasarkan nama variasi
+ *       - in: query
+ *         name: minHarga
+ *         schema:
+ *           type: number
+ *         description: Filter harga minimal
+ *       - in: query
+ *         name: maxHarga
+ *         schema:
+ *           type: number
+ *         description: Filter harga maksimal
  *     responses:
  *       200:
  *         description: Daftar semua variasi
@@ -91,7 +117,7 @@ router.get("/", variasiController.getAll);
  *   get:
  *     summary: Ambil variasi berdasarkan ID
  *     tags: [Variasi]
- *     security: []         # 🔓 Hilangkan gembok di Swagger
+ *     security: [] 
  *     parameters:
  *       - in: path
  *         name: id
@@ -107,7 +133,6 @@ router.get("/", variasiController.getAll);
  *         description: Terjadi kesalahan pada server
  */
 router.get("/:id", variasiController.getById);
-
 
 /**
  * @swagger

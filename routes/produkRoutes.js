@@ -50,7 +50,7 @@ const path = require("path");
  *   get:
  *     summary: Ambil semua produk (dengan pagination & search opsional)
  *     tags: [Produk]
- *       security: []      
+ *     security: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -99,7 +99,7 @@ router.get("/", produkController.getAll);
  *   get:
  *     summary: Ambil produk berdasarkan ID
  *     tags: [Produk]
- *     security: []        # 🔓 Hilangkan logo gembok di Swagger
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -113,10 +113,17 @@ router.get("/", produkController.getAll);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Produk'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Data produk dengan ID 1 berhasil diambil
+ *                 data:
+ *                   $ref: '#/components/schemas/Produk'
  *       404:
  *         description: Produk tidak ditemukan
  */
+
 router.get("/:id", produkController.getById);
 
 /**

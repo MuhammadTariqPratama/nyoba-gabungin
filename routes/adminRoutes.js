@@ -181,10 +181,10 @@ router.delete("/:id", verifyToken, adminController.delete);
  *             properties:
  *               username:
  *                 type: string
- *                 example: admin123
+ *                 example: admin_master
  *               password:
  *                 type: string
- *                 example: password123
+ *                 example: admin123
  *     responses:
  *       200:
  *         description: Login berhasil, token JWT dikembalikan
