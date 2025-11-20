@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 require("dotenv").config();
 const sequelize = require("./models/index");
@@ -22,6 +23,16 @@ const AlurBarang = require("./models/alurBarang");
 
 app.use(express.json());  
 app.use(express.urlencoded({ extended: true }));
+
+// Configure CORS. Set FRONTEND_URL in .env to restrict origin in production.
+// Defaults to http://localhost:5173 (Vite dev) if FRONTEND_URL is not set.
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
+);
 
 app.get("/", (req, res) => {
   res.json({ message: "API telah berjalan" });
